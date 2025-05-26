@@ -7,35 +7,39 @@ import Project from "./models/Project.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const allowedStaticOrigins = [
+let allowedOrigins = new Set([
   "https://loggerapp-frontend.onrender.com",
-  "http://localhost:5173"
-];
+  "http://localhost:5173",
+]);
 
-const dynamicCors = async (req, callback) => {
-  const origin = req.header("Origin");
-  if (!origin) return callback(null, { origin: false });
-
-  if (allowedStaticOrigins.includes(origin)) {
-    return callback(null, { origin: true, credentials: true });
-  }
-
+const loadAllowedOrigins = async () => {
   try {
-    const project = await Project.findOne({ projectOrigins: origin });
-    if (project) {
-      return callback(null, { origin: true, credentials: true });
-    } else {
-      return callback(null, { origin: false });
+    const projects = await Project.find({}, "projectOrigins");
+    for (const project of projects) {
+      if (Array.isArray(project.projectOrigins)) {
+        project.projectOrigins.forEach(origin => allowedOrigins.add(origin));
+      }
     }
-  } catch (error) {
-    console.error("CORS error:", error);
-    return callback(error, { origin: false });
+    console.log("✅ Allowed origins loaded:", [...allowedOrigins]);
+  } catch (err) {
+    console.error("❌ Failed to load allowed origins:", err);
   }
 };
 
-app.use(cors(dynamicCors));
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, false);
+    if (allowedOrigins.has(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+  credentials: true,
+};
 
-app.options("*", cors(dynamicCors));
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -48,7 +52,8 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-connectDB().then(() => {
+connectDB().then(async () => {
+  await loadAllowedOrigins();
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
   });
