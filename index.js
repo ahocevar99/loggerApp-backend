@@ -12,17 +12,32 @@ let allowedOrigins = new Set([
   "http://localhost:5173",
 ]);
 
+const isValidOrigin = (url) => {
+  try {
+    const u = new URL(url);
+    return ["http:", "https:"].includes(u.protocol);
+  } catch {
+    return false;
+  }
+};
+
 const loadAllowedOrigins = async () => {
   try {
     const projects = await Project.find({}, "projectOrigins");
     for (const project of projects) {
       if (Array.isArray(project.projectOrigins)) {
-        project.projectOrigins.forEach(origin => allowedOrigins.add(origin));
+        project.projectOrigins.forEach(origin => {
+          if (isValidOrigin(origin)) {
+            allowedOrigins.add(origin);
+          } else {
+            console.warn("Neveljaven origin iz baze preskočen:", origin);
+          }
+        });
       }
     }
-    console.log("✅ Allowed origins loaded:", [...allowedOrigins]);
+    console.log("Allowed origins loaded:", [...allowedOrigins]);
   } catch (err) {
-    console.error("❌ Failed to load allowed origins:", err);
+    console.error("Failed to load allowed origins:", err);
   }
 };
 
