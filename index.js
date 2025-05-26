@@ -2,14 +2,12 @@ import express from "express";
 import cors from "cors";
 import connectDB from "./config/db.js";
 import router from "./routes.js";
-import Project from "./models/Project.js"; // potrebujemo za dinamične origine
+import Project from "./models/Project.js"; 
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// ----------------------
-// Dynamic CORS middleware
-// ----------------------
+
 const dynamicCors = async (req, callback) => {
   const origin = req.header("Origin");
 
@@ -19,9 +17,9 @@ const dynamicCors = async (req, callback) => {
     const project = await Project.findOne({ projectOrigins: origin });
 
     if (project) {
-      callback(null, { origin: true }); // Dovoli ta origin
+      callback(null, { origin: true }); 
     } else {
-      callback(null, { origin: false }); // Blokiraj, origin ni znan
+      callback(null, { origin: false }); 
     }
   } catch (error) {
     console.error("CORS error:", error);
@@ -29,23 +27,13 @@ const dynamicCors = async (req, callback) => {
   }
 };
 
-// Uporabi CORS z dinamičnim preverjanjem
 app.use(cors(dynamicCors));
 
-// ----------------------
-// Middleware
-// ----------------------
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ----------------------
-// Routes
-// ----------------------
 app.use("/", router);
 
-// ----------------------
-// Error handler
-// ----------------------
 app.use((err, req, res, next) => {
   if (err.name === "UnauthorizedError") {
     return res.status(401).json({ message: "Invalid or missing token" });
@@ -53,9 +41,6 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// ----------------------
-// Start Server
-// ----------------------
 connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`✅ Server running at http://localhost:${PORT}`);
