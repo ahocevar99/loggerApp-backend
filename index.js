@@ -7,37 +7,39 @@ import Project from "./models/Project.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const allowedStaticOrigins = [
+  "https://loggerapp-frontend.onrender.com",
+  "http://localhost:5173"
+];
 
-let allowedOrigins = [];
+const dynamicCors = async (req, callback) => {
+  const origin = req.header("Origin");
+  if (!origin) return callback(null, { origin: false });
 
-const loadAllowedOrigins = async () => {
+  if (allowedStaticOrigins.includes(origin)) {
+    return callback(null, { origin: true, credentials: true });
+  }
+
   try {
-    const projects = await Project.find({}, "projectOrigins");
-    allowedOrigins = projects.flatMap(p => p.projectOrigins);
-    console.log("✅ Allowed origins loaded:", allowedOrigins);
-  } catch (err) {
-    console.error("Failed to load allowed origins:", err);
+    const project = await Project.findOne({ projectOrigins: origin });
+    if (project) {
+      return callback(null, { origin: true, credentials: true });
+    } else {
+      return callback(null, { origin: false });
+    }
+  } catch (error) {
+    console.error("CORS error:", error);
+    return callback(error, { origin: false });
   }
 };
 
+app.use(cors(dynamicCors));
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, false);
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(null, false);
-    }
-  },
-  credentials: true,
-};
+app.options("*", cors(dynamicCors));
 
-app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/", router);
-
 
 app.use((err, req, res, next) => {
   if (err.name === "UnauthorizedError") {
@@ -46,9 +48,7 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-
-connectDB().then(async () => {
-  await loadAllowedOrigins(); 
+connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
   });
