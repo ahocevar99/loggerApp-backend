@@ -32,29 +32,33 @@ const corsOptions = {
     if (allowedOrigins.has(origin)) {
       callback(null, true);
     } else {
+      console.warn("❌ Blocked origin:", origin);
       callback(null, false);
     }
   },
   credentials: true,
 };
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+const startServer = async () => {
+  await connectDB();
+  await loadAllowedOrigins(); 
+  app.use(cors(corsOptions));
+  app.options("*", cors(corsOptions)); 
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use("/", router);
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use("/", router);
 
-app.use((err, req, res, next) => {
-  if (err.name === "UnauthorizedError") {
-    return res.status(401).json({ message: "Invalid or missing token" });
-  }
-  next(err);
-});
+  app.use((err, req, res, next) => {
+    if (err.name === "UnauthorizedError") {
+      return res.status(401).json({ message: "Invalid or missing token" });
+    }
+    next(err);
+  });
 
-connectDB().then(async () => {
-  await loadAllowedOrigins();
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
   });
-});
+};
+
+startServer();
