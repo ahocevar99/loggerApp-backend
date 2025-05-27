@@ -196,11 +196,12 @@ router.post("/api/addUser", async (req, res) => {
                 email_verified: false,
             }),
         });
-
+        
         const newUser = await userRes.json();
-
+        let message=newUser.message;
+        if (newUser.message === "The user already exists.") message = "Uporabnik že obstaja." 
         if (!userRes.ok) {
-            return res.status(userRes.status).json({ message: 'Napaka pri dodajanju uporabnika. Preveri podatke.', details: newUser });
+            return res.status(userRes.status).json({ message: message, details: newUser });
         }
 
         res.status(201).json({ message: 'Uporabnik uspešno dodan', user: newUser });
