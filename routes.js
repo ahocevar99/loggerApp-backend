@@ -86,6 +86,7 @@ router.post("/api/addProject", jwtCheck, async (req, res) => {
         ownerEmail: email,
         apiKey: apiKey,
     });
+    console.log(project)
 
     try {
         await project.save();
