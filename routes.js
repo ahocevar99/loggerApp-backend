@@ -68,8 +68,6 @@ router.post("/api/log", async (req, res) => {
 
 
 
-// ✅ ZAŠČITENE ROUTE Z JWT
-
 router.post("/api/addProject", jwtCheck, async (req, res) => {
     const { name, origins } = req.body;
     const apiKey = crypto.randomBytes(16).toString('hex');
@@ -158,8 +156,6 @@ router.get("/api/allLogs", jwtCheck, async (req, res) => {
 });
 
 
-
-// ✅ Dovoljena tudi brez JWT — lahko dodaš zaščito po potrebi
 router.post("/api/addUser", async (req, res) => {
     const { email, username, password } = req.body;
 
