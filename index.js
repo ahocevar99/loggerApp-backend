@@ -35,30 +35,30 @@ const loadAllowedOrigins = async () => {
         });
       }
     }
-    console.log("Allowed origins loaded:", [...allowedOrigins]);
+    console.log("✅ Allowed origins loaded:", [...allowedOrigins]);
   } catch (err) {
-    console.error("Failed to load allowed origins:", err);
+    console.error("❌ Failed to load allowed origins:", err);
   }
-};
-
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, false);
-    if (allowedOrigins.has(origin)) {
-      callback(null, true);
-    } else {
-      console.warn("❌ Blocked origin:", origin);
-      callback(null, false);
-    }
-  },
-  credentials: true,
 };
 
 const startServer = async () => {
   await connectDB();
-  await loadAllowedOrigins(); 
-  app.use(cors(corsOptions));
+  await loadAllowedOrigins();
 
+  const corsOptions = {
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, false);
+      if (allowedOrigins.has(origin)) {
+        callback(null, true);
+      } else {
+        console.warn("❌ Blocked origin:", origin);
+        callback(null, false);
+      }
+    },
+    credentials: true,
+  };
+
+  app.use(cors(corsOptions));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use("/", router);
